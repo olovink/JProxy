@@ -11,26 +11,26 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class Main {
+    public static void main(String[] args) throws Exception {
+        String serverHost;
+        int serverPort;
+        int proxyPort;
+        serverHost = "mypex.ru";
+        serverPort = 19133;
+        proxyPort = 19132;
+
+        new Main(serverHost, serverPort, proxyPort).runServer();
+    }
 
     static final int CONNECTION_TIMEOUT = 60000;
     HashMap<InetSocketAddress, ChannelInfo> channelMap = new HashMap<InetSocketAddress, ChannelInfo>();
     InetSocketAddress serverAddress;
-
-    static int proxyPort = 19133;
-
-    public static void main(String[] args) throws Exception {
-
-        int serverPort = 19132;
-        int proxyPort = 19133;
-        String serverHost = "127.0.0.1";
-        System.out.println("Server " + serverHost + ":" + serverPort + " started on port: " + proxyPort);
-        new Main(serverHost, serverPort, proxyPort).runServer();
-    }
+    int proxyPort;
 
     public Main(String serverHost, int serverPort, int proxyPort) throws Exception {
         InetAddress resolvedAddress = InetAddress.getByName(serverHost);
         this.serverAddress = new InetSocketAddress(resolvedAddress, serverPort);
-        Main.proxyPort = proxyPort;
+        this.proxyPort = proxyPort;
     }
 
     public void runServer() throws Exception {
@@ -43,7 +43,7 @@ public class Main {
 
         while (true) {
             try {
-                selector.selectNow();
+                selector.select(10000); //selector.selectNow();
                 Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
 
                 while (keyIterator.hasNext()) {
@@ -64,9 +64,9 @@ public class Main {
                                 InetSocketAddress tempAddress = (InetSocketAddress) tempChannel.socket().getLocalSocketAddress();
                                 info = new ChannelInfo(tempChannel, remoteAddress);
                                 channelMap.put(remoteAddress, info);
-                                System.out.println("Remote address: " + remoteAddress);
+                                System.out.println("Added key = " + remoteAddress.toString());
                                 channelMap.put(tempAddress, info);
-                                System.out.println("Local address: " + tempAddress.toString());
+                                System.out.println("Added key = " + tempAddress.toString());
                             }
 
                             info.rxTime = System.currentTimeMillis();
@@ -122,6 +122,8 @@ public class Main {
     }
 
     public static class ChannelInfo {
+        public ChannelInfo() {
+        }
 
         public ChannelInfo(DatagramChannel channel, InetSocketAddress remoteAddress) {
             this.channel = channel;
@@ -134,5 +136,4 @@ public class Main {
         InetSocketAddress remoteAddress;
         long rxTime;
     }
-
 }
